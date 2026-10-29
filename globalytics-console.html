@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Globalytics Intelligence Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: command console — header + tab rail on top, instrument grid left, live agent process column right (stacks below on narrow screens). Light by default, own Hell/Dunkel switch in the header. */
+:root {
+  /* Hell (Standard) */
+  --bg: #f3f5f1;
+  --panel: #ffffff;
+  --panel-2: #f7f8f5;
+  --raise: #eef1eb;
+  --hover: #e6eae3;
+  --line: #e1e5dd;
+  --line-2: #cdd3c8;
+  --fg: #0e1210;
+  --fg-2: #4a544f;
+  --fg-3: #78827c;
+  --lime: #c8f135;
+  --lime-line: #8db01a;
+  --lime-ink: #557000;
+  --lime-dim: #9fbf2c;
+  --lime-glow: rgba(141, 176, 26, 0.16);
+  --coral: #d65a3c;
+  --amber: #b3741a;
+  --cyan: #1a8a92;
+  --run-bg: #f4fadc;
+  --term-bg: #f7f8f5;
+  --head-bg: rgba(243, 245, 241, 0.92);
+  --side-bg: rgba(255, 255, 255, 0.94);
+  --grid: rgba(14, 18, 16, 0.035);
+  --shadow: 0 1px 2px rgba(14, 18, 16, 0.05);
+  --font: 'Geist', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: light;
+}
+:root[data-mode="dark"] {
+  --bg: #060808;
+  --panel: #0b0e0e;
+  --panel-2: #101414;
+  --raise: #151a1a;
+  --hover: #1b2121;
+  --line: #1b2222;
+  --line-2: #263030;
+  --fg: #e7ece9;
+  --fg-2: #a3aeaa;
+  --fg-3: #6b7774;
+  --lime: #c8f135;
+  --lime-line: #c8f135;
+  --lime-ink: #c8f135;
+  --lime-dim: #7f9a1f;
+  --lime-glow: rgba(200, 241, 53, 0.16);
+  --coral: #ef7a5d;
+  --amber: #f2b84b;
+  --cyan: #6fd3d8;
+  --run-bg: #121808;
+  --term-bg: #040505;
+  --head-bg: rgba(6, 8, 8, 0.92);
+  --side-bg: rgba(11, 14, 14, 0.94);
+  --grid: rgba(255, 255, 255, 0.018);
+  --shadow: none;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background-color: var(--bg); transition: background-color .3s; color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  min-height: 100%;
+}
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, h4 { margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+p { margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); }
+:focus-visible { outline: 1.5px solid var(--lime-ink); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ---------- Header ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--head-bg); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top-inner { display: flex; align-items: center; gap: 18px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 26px; height: 26px; border: 1px solid var(--line-2); border-radius: 6px; display: grid; place-items: center; background: var(--panel); }
+.mark .mk { fill: var(--fg); }
+.brand b { font-weight: 650; letter-spacing: 0.14em; font-size: 13px; }
+.brand span { font-family: var(--mono); font-size: 11px; color: var(--fg-3); letter-spacing: 0.06em; }
+.status { display: flex; gap: 18px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.stat-chip { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px; color: var(--fg-2); }
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 0 var(--lime-glow); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(200,241,53,0.45); } 70% { box-shadow: 0 0 0 8px rgba(200,241,53,0); } 100% { box-shadow: 0 0 0 0 rgba(200,241,53,0); } }
+.mode-btn { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 4px; background: var(--panel); color: var(--fg); cursor: pointer; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; }
+.mode-btn:hover { background: var(--hover); }
+.mode-btn svg { width: 14px; height: 14px; }
+.demo-tag { border: 1px solid var(--line-2); border-radius: 4px; padding: 3px 8px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: var(--fg-2); }
+
+.tabs { display: flex; gap: 0; overflow-x: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); border-top: 1px solid var(--line); scrollbar-width: none; }
+.tab {
+  position: relative; display: flex; align-items: center; gap: 10px; flex: none;
+  padding: 12px 18px 12px 14px; border: 0; background: none; cursor: pointer;
+  color: var(--fg-3); font-size: 13px; font-weight: 550; border-right: 1px solid var(--line);
+  transition: color .2s, background .2s;
+}
+.tab:first-child { border-left: 1px solid var(--line); }
+.tab .n { font-family: var(--mono); font-size: 10.5px; color: var(--fg-3); }
+.tab:hover { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"] { color: var(--fg); background: var(--panel); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--lime-line); }
+.tab .lock { width: 13px; height: 13px; opacity: .8; }
+.tab.unlocked .lock { display: none; }
+.tab.just-unlocked { animation: unlock 1.4s ease; }
+@keyframes unlock { 0% { background: var(--lime-glow); color: var(--lime-ink); } 100% { background: transparent; } }
+.tab .badge { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--lime); color: #0b0e0e; display: none; }
+.tab.unlocked .badge.new { display: inline-block; }
+
+/* ---------- Layout ---------- */
+.shell { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 0; align-items: start; }
+.main { padding: 20px max(16px, env(safe-area-inset-left, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); padding-right: 20px; min-width: 0; }
+.side { position: sticky; top: 104px; height: calc(100vh - 104px); border-left: 1px solid var(--line); background: var(--side-bg); display: flex; flex-direction: column; min-width: 0; padding-right: env(safe-area-inset-right, 0px); }
+.view { display: none; flex-direction: column; gap: 14px; }
+.view.active { display: flex; animation: fade .35s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.span2 { grid-column: span 2; }
+
+.pnl { background: var(--panel); box-shadow: var(--shadow); border: 1px solid var(--line); border-radius: 6px; min-width: 0; position: relative; }
+.pnl-h { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.pnl-h h3 { font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; }
+.pnl-h .r { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.pnl-b { padding: 14px; }
+.corner::before, .corner::after { content: ""; position: absolute; width: 8px; height: 8px; border-color: var(--line-2); border-style: solid; pointer-events: none; }
+.corner::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+.corner::after { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+/* KPI strip */
+.kpi { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kpi .v { font-family: var(--mono); font-size: 21px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kpi .d { font-family: var(--mono); font-size: 11px; color: var(--fg-3); display: flex; gap: 6px; align-items: center; }
+.up { color: var(--lime-ink); }
+.down { color: var(--coral); }
+.spark { width: 100%; height: 26px; display: block; margin-top: 4px; }
+.flash-in { animation: fin .8s ease; }
+.flash-out { animation: fout .8s ease; }
+@keyframes fin { from { color: var(--lime-ink); } }
+@keyframes fout { from { color: var(--coral); } }
+
+/* Gauges */
+.gauge { padding: 12px 14px 14px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.gauge .gh { align-self: stretch; display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; }
+.gauge svg { width: 100%; max-width: 230px; height: auto; display: block; overflow: visible; }
+.g-track { fill: none; stroke: var(--line-2); stroke-width: 9; }
+.g-val { fill: none; stroke: var(--lime-line); stroke-width: 9; transition: stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1), stroke .4s; filter: drop-shadow(0 0 5px var(--lime-glow)); }
+.g-val.warn { stroke: var(--amber); filter: drop-shadow(0 0 6px rgba(242,184,75,.3)); }
+.g-val.bad { stroke: var(--coral); filter: drop-shadow(0 0 6px rgba(239,122,93,.3)); }
+.g-tick { stroke: var(--fg-3); stroke-width: 1; }
+.g-tick.maj { stroke: var(--fg-2); stroke-width: 1.4; }
+.g-tl { fill: var(--fg-3); font-family: var(--mono); font-size: 8.5px; }
+.g-needle { transform-box: view-box; transform-origin: 100px 104px; transition: transform 1.4s cubic-bezier(.2,.7,.2,1); }
+.g-needle path { fill: var(--fg); }
+.g-hub { fill: var(--bg); stroke: var(--fg); stroke-width: 2; }
+.g-target { stroke: var(--cyan); stroke-width: 2; }
+.gauge .gv { font-family: var(--mono); font-size: 26px; font-weight: 500; letter-spacing: -0.03em; margin-top: -6px; font-variant-numeric: tabular-nums; }
+.gauge .gv small { font-size: 13px; color: var(--fg-2); margin-left: 3px; }
+.gauge .gs { font-size: 11.5px; color: var(--fg-2); min-height: 17px; }
+.gauge.locked svg, .gauge.locked .gv { opacity: .35; }
+.gauge .tagline { font-family: var(--mono); font-size: 10px; color: var(--fg-3); }
+.chip { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--line-2); color: var(--fg-3); white-space: nowrap; }
+.chip.live { color: var(--lime-ink); border-color: var(--lime-dim); }
+.chip.ai { color: var(--cyan); border-color: rgba(111,211,216,.35); }
+.chip.warn { color: var(--amber); border-color: rgba(242,184,75,.35); }
+
+/* Stream chart + ticker */
+.chart-wrap { position: relative; height: 230px; }
+.chart-wrap canvas { width: 100%; height: 100%; display: block; }
+.legend { display: flex; gap: 14px; font-family: var(--mono); font-size: 11px; color: var(--fg-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 6px; }
+.ticker { list-style: none; margin: 0; padding: 0; height: 268px; overflow: hidden; font-size: 12px; }
+.ticker li { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 10px; padding: 7px 14px; border-bottom: 1px solid var(--line); align-items: start; animation: slide .35s ease; }
+.ticker li .t { font-family: var(--mono); font-size: 10.5px; color: var(--fg-3); padding-top: 1px; }
+.ticker li .who { min-width: 0; }
+.ticker li .who b { font-weight: 550; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ticker li .who span { color: var(--fg-3); font-size: 11px; }
+.ticker li .amt { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.ticker li .flag { grid-column: 2 / -1; font-family: var(--mono); font-size: 10.5px; color: var(--cyan); }
+.ticker li .flag.w { color: var(--amber); }
+@keyframes slide { from { opacity: 0; transform: translateY(-6px); background: var(--raise); } to { opacity: 1; transform: none; } }
+
+/* Calculator */
+.calc { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; }
+.calc-in { padding: 14px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid var(--line); }
+.calc-out { padding: 14px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.slider label { font-size: 12.5px; color: var(--fg-2); }
+.slider output { font-family: var(--mono); font-size: 13px; color: var(--fg); text-align: right; }
+.slider input { grid-column: 1 / -1; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(90deg, var(--lime-line) var(--p, 50%), var(--line-2) var(--p, 50%)); }
+input[type=range]::-moz-range-track { height: 2px; background: var(--line-2); }
+input[type=range]::-moz-range-progress { height: 2px; background: var(--lime-line); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -6px; border-radius: 2px; background: var(--fg); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--lime-line); }
+input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 2px; background: var(--fg); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--lime-line); }
+.res-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line-2); font-size: 12.5px; }
+.res-row b { font-family: var(--mono); font-weight: 500; white-space: nowrap; }
+.res-total { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding-top: 4px; }
+.res-total b { font-family: var(--mono); font-size: 22px; color: var(--lime-ink); font-weight: 500; letter-spacing: -0.02em; }
+.note { font-size: 11px; color: var(--fg-3); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 4px; border: 1px solid var(--line-2); background: var(--raise); color: var(--fg); font-size: 12.5px; font-weight: 550; cursor: pointer; transition: background .15s, border-color .15s, transform .1s; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--fg-3); background: var(--hover); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-lime { background: var(--lime); color: #0b0e0e; border-color: var(--lime); }
+.btn-lime:hover:not(:disabled) { background: #d6fb53; border-color: #d6fb53; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--fg-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--raise); }
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn svg { width: 14px; height: 14px; }
+
+/* Side panel */
+.side-h { padding: 14px 16px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.side-h h2 { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.side-b { flex: 1; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.bar { height: 3px; background: var(--line-2); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--lime-line); transition: width .3s linear; }
+.flow svg { width: 100%; height: auto; display: block; }
+.flow .src rect, .flow .agt rect { fill: var(--panel-2); stroke: var(--line-2); }
+.flow text { fill: var(--fg-2); font-family: var(--mono); font-size: 9px; }
+.flow .core rect { fill: var(--raise); stroke: var(--lime-dim); }
+.flow .core text { fill: var(--lime-ink); }
+.flow path { stroke: var(--line-2); stroke-width: 1; fill: none; }
+.flow.run path { stroke: var(--lime-line); stroke-dasharray: 3 4; animation: dash .9s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -14; } }
+.flow .dot { fill: var(--lime-line); opacity: 0; }
+.flow.run .dot { opacity: 1; }
+.agents { display: flex; flex-direction: column; gap: 4px; }
+.agent { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); transition: border-color .2s, background .2s; }
+.agent .ic { width: 22px; height: 22px; border-radius: 3px; border: 1px solid var(--line-2); display: grid; place-items: center; font-family: var(--mono); font-size: 10px; color: var(--fg-3); }
+.agent .nm { font-size: 12.5px; font-weight: 550; }
+.agent .ds { font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent .st { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); }
+.agent.run { border-color: var(--lime-dim); background: var(--run-bg); }
+.agent.run .ic { border-color: var(--lime-ink); color: var(--lime-ink); animation: blink 1s infinite; }
+.agent.run .st { color: var(--lime-ink); }
+.agent.done .ic { background: var(--lime); border-color: var(--lime); color: #0b0e0e; }
+.agent.done .st { color: var(--fg-2); }
+@keyframes blink { 50% { opacity: .45; } }
+.term { background: var(--term-bg); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; font-family: var(--mono); font-size: 11px; line-height: 1.6; height: 220px; overflow-y: auto; color: var(--fg-2); }
+.term .ln { white-space: pre-wrap; word-break: break-word; }
+.term .ln .p { color: var(--fg-3); }
+.term .ln.ok { color: var(--lime-ink); }
+.term .ln.ai { color: var(--cyan); }
+.term .ln.w { color: var(--amber); }
+.term .cur { display: inline-block; width: 7px; height: 12px; background: var(--lime-line); vertical-align: -2px; animation: blink .9s steps(1) infinite; }
+.summary { border: 1px solid var(--lime-dim); border-radius: 6px; background: linear-gradient(180deg, var(--lime-glow), transparent 70%); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.summary .big { font-family: var(--mono); font-size: 28px; color: var(--lime-ink); letter-spacing: -0.03em; }
+.measure { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.measure .t { font-size: 12.5px; font-weight: 550; }
+.measure .e { font-size: 11px; color: var(--fg-3); grid-column: 1; }
+.measure .btn { grid-row: 1 / span 2; grid-column: 2; }
+.measure.on .btn { background: transparent; color: var(--lime-ink); border-color: var(--lime-dim); }
+
+/* Locked overlay */
+.locked-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 64px 20px; border: 1px dashed var(--line-2); border-radius: 6px; background: repeating-linear-gradient(135deg, var(--grid) 0 10px, transparent 10px 20px); }
+.locked-screen svg { width: 34px; height: 34px; color: var(--fg-3); }
+.locked-screen h2 { font-size: 20px; font-weight: 600; }
+.locked-screen p { color: var(--fg-2); max-width: 52ch; }
+
+/* Tables / lists */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tbl th { text-align: left; font-family: var(--mono); font-weight: 500; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl .r { text-align: right; }
+.tbl .m { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tbl tbody tr { transition: background .15s; }
+.tbl tbody tr:hover { background: var(--panel-2); }
+.scroll-x { overflow-x: auto; }
+.pbar { display: inline-flex; align-items: center; gap: 8px; }
+.pbar span { width: 56px; height: 4px; background: var(--line-2); display: inline-block; position: relative; }
+.pbar span i { position: absolute; inset: 0 auto 0 0; background: var(--lime-line); }
+.pbar span i.c { background: var(--coral); }
+.pbar span i.a { background: var(--amber); }
+
+.heat { display: grid; gap: 2px; font-size: 11px; }
+.heat .hc { height: 26px; border-radius: 2px; display: grid; place-items: center; font-family: var(--mono); font-size: 10px; color: rgba(11,14,14,.85); cursor: pointer; border: 0; padding: 0; transition: transform .12s, box-shadow .12s; }
+.heat .hc:hover { transform: scale(1.06); box-shadow: 0 0 0 1px var(--fg); }
+.heat .hc { color: #10140f; }
+.heat .hc.own { background: transparent !important; color: var(--fg-3); border: 1px solid var(--line); cursor: default; }
+.heat .hc.own:hover { transform: none; box-shadow: none; }
+.heat .hh { font-family: var(--mono); font-size: 10px; color: var(--fg-3); display: flex; align-items: flex-end; justify-content: center; text-align: center; padding-bottom: 4px; }
+.heat .hn { font-size: 11.5px; color: var(--fg-2); display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+
+.funnel { display: flex; flex-direction: column; gap: 8px; }
+.stage { display: grid; grid-template-columns: 170px minmax(0, 1fr) 90px 80px; gap: 12px; align-items: center; font-size: 12.5px; }
+.stage .track { height: 22px; background: var(--panel-2); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.stage .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, rgba(141,176,26,.18), rgba(141,176,26,.5)); transition: width .6s ease; }
+.stage .flowdots { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--lime-line) 1.2px, transparent 1.6px); background-size: 18px 22px; animation: flowx 1.4s linear infinite; opacity: .5; }
+@keyframes flowx { to { background-position: 18px 0; } }
+.stage.bottleneck .track { border-color: rgba(242,184,75,.6); }
+.stage.bottleneck .fill { background: linear-gradient(90deg, rgba(242,184,75,.2), rgba(242,184,75,.55)); }
+.stage .m { font-family: var(--mono); text-align: right; }
+
+.list-ins { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list-ins li { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); align-items: start; }
+.list-ins li:last-child { border-bottom: 0; }
+.list-ins li > i { width: 6px; height: 6px; border-radius: 1px; margin-top: 6px; background: var(--cyan); }
+.list-ins li.w > i { background: var(--amber); }
+.list-ins li.c > i { background: var(--coral); }
+.list-ins li b { font-weight: 550; font-size: 12.5px; }
+.list-ins li p { font-size: 11.5px; color: var(--fg-3); }
+.list-ins li .m { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+
+.toast { color: var(--fg); position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50; background: var(--raise); border: 1px solid var(--lime-dim); padding: 10px 14px; border-radius: 4px; font-size: 12.5px; display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.18); max-width: calc(100vw - 32px); }
+.toast b { color: var(--lime-ink); font-family: var(--mono); font-weight: 500; }
+.fab { display: none; }
+
+[data-motion="reduced"] *, [data-motion="reduced"] *::before, [data-motion="reduced"] *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; } }
+
+@media (max-width: 1280px) { .g6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { position: relative; top: 0; height: auto; border-left: 0; border-top: 1px solid var(--line); }
+  .side-b { overflow: visible; }
+  .main { padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .fab { display: inline-flex; position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); z-index: 40; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+}
+@media (max-width: 860px) {
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g2, .g3 { grid-template-columns: minmax(0, 1fr); }
+  .span2 { grid-column: auto; }
+  .calc { grid-template-columns: minmax(0, 1fr); }
+  .calc-in { border-right: 0; border-bottom: 1px solid var(--line); }
+  .stage { grid-template-columns: 120px minmax(0, 1fr) 70px; }
+  .stage .m2 { display: none; }
+  .status .hide-sm { display: none; }
+}
+@media (max-width: 520px) {
+  .g6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi .v { font-size: 17px; }
+  .gauge .gv { font-size: 21px; }
+  .g4 { gap: 10px; }
+  .gauge { padding: 10px 8px 12px; }
+  .gauge .gh { flex-direction: column; gap: 4px; }
+  .gauge .gh .lbl { font-size: 9.5px; letter-spacing: .08em; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 20 20"><rect class="mk" x="2" y="11" width="4" height="7" rx="1"/><rect class="mk" x="8" y="7" width="4" height="11" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1" fill="#c8f135"/></svg></span>
+      <div><b>GLOBALYTICS</b><br><span>INTELLIGENCE CONSOLE</span></div>
+    </div>
+    <div class="status">
+      <span class="stat-chip"><span class="pulse" aria-hidden="true"></span><span>LIVE</span><span id="clock" class="mono">--:--:--</span></span>
+      <span class="stat-chip hide-sm"><span class="lbl">Ereignisse</span><span id="evRate" class="mono">0</span><span class="lbl">/min</span></span>
+      <span class="stat-chip hide-sm"><span class="lbl">Quellen</span><span class="mono">ERP · CRM · BANK</span></span>
+      <span class="demo-tag" title="Alle Daten sind synthetisch. Es ist kein System angebunden.">DEMO · SYNTHETISCHE DATEN</span>
+      <button class="mode-btn" id="modeBtn" type="button" aria-pressed="false" aria-label="Dunkles Design einschalten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="modeIco"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span id="modeLbl">DUNKEL</span></button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Bereiche">
+    <button class="tab unlocked" role="tab" id="tab-lagebild" data-tab="lagebild" aria-selected="true"><span class="n">01</span>Lagebild</button>
+    <button class="tab" role="tab" id="tab-umsatz" data-tab="umsatz" aria-selected="false"><span class="n">02</span>Umsatzpotenzial<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="badge new">NEU</span></button>
+    <button class="tab" role="tab" id="tab-cashflow" data-tab="cashflow" aria-selected="false"><span class="n">03</span>Cashflow live<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="badge new">NEU</span></button>
+    <button class="tab" role="tab" id="tab-risiko" data-tab="risiko" aria-selected="false"><span class="n">04</span>Kundenrisiko<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="badge new">NEU</span></button>
+    <button class="tab" role="tab" id="tab-prozesse" data-tab="prozesse" aria-selected="false"><span class="n">05</span>Prozesse<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="badge new">NEU</span></button>
+  </nav>
+</header>
+
+<div class="shell">
+  <main class="main">
+
+    <!-- 01 LAGEBILD -->
+    <section class="view active" id="view-lagebild" role="tabpanel" aria-labelledby="tab-lagebild">
+      <div class="grid g6" id="kpis"></div>
+
+      <div class="grid g4" id="gauges">
+        <div class="pnl corner gauge" id="g-upsell"></div>
+        <div class="pnl corner gauge" id="g-liq"></div>
+        <div class="pnl corner gauge" id="g-health"></div>
+        <div class="pnl corner gauge" id="g-auto"></div>
+      </div>
+
+      <div class="grid g3">
+        <div class="pnl span2">
+          <div class="pnl-h">
+            <h3>Zahlungsströme live</h3><span class="chip live">LIVE</span>
+            <div class="r legend"><span><i style="background:var(--lime-line)"></i>Eingänge</span><span><i style="background:var(--coral)"></i>Ausgänge</span><span><i style="background:var(--fg-2);height:1px"></i>Netto kumuliert</span><span style="color:var(--fg-3)">geglättet je Takt</span></div>
+          </div>
+          <div class="pnl-b"><div class="chart-wrap"><canvas id="stream" aria-label="Live-Liniendiagramm der Zahlungsein- und -ausgänge der letzten 90 Takte" role="img"></canvas></div></div>
+        </div>
+        <div class="pnl">
+          <div class="pnl-h"><h3>Ereignisse</h3><div class="r"><span class="chip" id="tickerMode">ROHDATEN</span></div></div>
+          <ul class="ticker" id="ticker" aria-live="off"></ul>
+        </div>
+      </div>
+
+      <div class="pnl">
+        <div class="pnl-h"><h3>Potenzial-Kalkulator</h3><span class="chip">SZENARIO</span><div class="r"><button class="btn btn-sm btn-ghost" id="calcReset">Standardwerte</button></div></div>
+        <div class="calc">
+          <div class="calc-in" id="calcIn"></div>
+          <div class="calc-out">
+            <div class="gauge" id="g-calc" style="padding:0"></div>
+            <div id="calcRes"></div>
+            <p class="note">Annahmen, keine Zusage. Umsatz ist nicht Gewinn: Der Deckungsbeitrag ist separat ausgewiesen.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 UMSATZPOTENZIAL -->
+    <section class="view" id="view-umsatz" role="tabpanel" aria-labelledby="tab-umsatz"></section>
+    <!-- 03 CASHFLOW -->
+    <section class="view" id="view-cashflow" role="tabpanel" aria-labelledby="tab-cashflow"></section>
+    <!-- 04 RISIKO -->
+    <section class="view" id="view-risiko" role="tabpanel" aria-labelledby="tab-risiko"></section>
+    <!-- 05 PROZESSE -->
+    <section class="view" id="view-prozesse" role="tabpanel" aria-labelledby="tab-prozesse"></section>
+  </main>
+
+  <aside class="side" id="side" aria-label="Agenten-Analyse">
+    <div class="side-h">
+      <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M12 7V3M8 13h.01M16 13h.01M9 17h6"/></svg>Agenten-Analyse<span class="chip" id="runState" style="margin-left:auto">BEREIT</span></h2>
+      <div class="bar" aria-hidden="true"><i id="runBar"></i></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-lime" id="runBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l11-7z"/></svg>Agentenanalyse starten</button>
+        <button class="btn btn-ghost" id="resetBtn" hidden>Zurücksetzen</button>
+      </div>
+    </div>
+    <div class="side-b">
+      <div class="flow" id="flow" aria-hidden="true"></div>
+      <div>
+        <div class="lbl" style="margin-bottom:8px">Agenten</div>
+        <div class="agents" id="agents"></div>
+      </div>
+      <div>
+        <div class="lbl" style="margin-bottom:8px">Protokoll</div>
+        <div class="term" id="term" role="log" aria-live="polite"><div class="ln"><span class="p">$</span> Warte auf Start. Die Agenten lesen den Datenstrom links und schalten die gesperrten Bereiche frei.</div></div>
+      </div>
+      <div id="summary"></div>
+    </div>
+  </aside>
+</div>
+<button class="btn btn-lime fab" id="fab">Agentenanalyse ↓</button>
+
+<script>
+(() => {
+'use strict';
+// ================= Helpers =================
+const $ = (s, el = document) => el.querySelector(s);
+const nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+const nf1 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+const eur = (v) => `${nf0.format(Math.round(v))} €`;
+const mio = (v) => Math.abs(v) >= 1e6 ? `${nf1.format(v / 1e6)} Mio €` : Math.abs(v) >= 1e4 ? `${nf0.format(Math.round(v / 1000))} T€` : eur(v);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const col = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const alpha = (hex, a) => { const h = hex.replace('#', ''); const n = parseInt(h.length === 3 ? h.split('').map((x) => x + x).join('') : h, 16); return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${a})`; };
+let reduced = false;
+try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+document.documentElement.dataset.motion = reduced ? 'reduced' : 'full';
+const sleep = (ms) => new Promise((r) => setTimeout(r, reduced ? Math.min(ms, 40) : ms));
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// ================= Demo-Unternehmen & Kunden (synthetisch) =================
+const R = rng(20261029);
+const PRODUCTS = [
+  { id: 'PLT', name: 'Plattform', price: 18000 },
+  { id: 'ANA', name: 'Analytics', price: 9600 },
+  { id: 'AUT', name: 'Automation', price: 14400 },
+  { id: 'INT', name: 'Integration', price: 6000 },
+  { id: 'CMP', name: 'Compliance', price: 8400 },
+  { id: 'SVC', name: 'Managed Service', price: 21600 },
+];
+const NAMES = [
+  ['Hanseatische Frachtkontor', 'Logistik'], ['Rheinpfalz Logistik', 'Logistik'], ['Kessler Spedition', 'Logistik'], ['Nordkap Cargo', 'Logistik'],
+  ['Mainhafen Distribution', 'Logistik'], ['Elbtal Kontraktlogistik', 'Logistik'], ['Taunus Privatbank', 'Bank'], ['Merkur Regionalbank', 'Bank'],
+  ['Lindenhof Bankhaus', 'Bank'], ['Auenland Kreditbank', 'Bank'], ['Quantor Leasing', 'Finanzdienstl.'], ['Finvero Zahlungsdienste', 'Finanzdienstl.'],
+  ['Helix Asset Services', 'Finanzdienstl.'], ['Kronberg Factoring', 'Finanzdienstl.'], ['Obertal Versicherung', 'Versicherung'], ['Seewind Versicherung', 'Versicherung'],
+  ['Weißenfels Großhandel', 'Handel'], ['Isarblick Retail', 'Handel'], ['Bergmann Elektro', 'Handel'], ['Brenntal Maschinenbau', 'Industrie'],
+  ['Ostwerk Präzisionstechnik', 'Industrie'], ['Lahnwerk Kunststoffe', 'Industrie'], ['Saalbach Elektronik', 'Industrie'], ['Neckarsteel Komponenten', 'Industrie'],
+];
+const CUSTOMERS = NAMES.map(([name, branch], i) => {
+  const size = 0.5 + R() * 2.2;
+  const owned = new Set(['PLT']);
+  PRODUCTS.slice(1).forEach((p) => { if (R() < 0.32 + size * 0.06) owned.add(p.id); });
+  if (owned.has('SVC') && owned.size > 4) owned.delete('INT');
+  const usage = clamp(0.35 + R() * 0.6, 0.2, 0.96);
+  const payDelay = Math.round(R() < 0.2 ? 18 + R() * 30 : R() * 12);
+  const ticketTrend = Math.round((R() - 0.35) * 80);
+  const usageTrend = Math.round((R() - 0.55) * 60);
+  const health = Math.round(clamp(40 + usage * 45 - payDelay * 0.7 - Math.max(0, ticketTrend) * 0.15 + Math.min(0, usageTrend) * 0.35 + R() * 10, 18, 96));
+  const revenue = (Math.round(PRODUCTS.filter((p) => owned.has(p.id)).reduce((s, p) => s + p.price, 0) * size * 1.9 / 100) * 100 + 24000) * 12;
+  const potential = {};
+  PRODUCTS.forEach((p) => {
+    if (owned.has(p.id)) return;
+    let base = 0.18 + R() * 0.55;
+    if (p.id === 'CMP' && ['Bank', 'Versicherung', 'Finanzdienstl.'].includes(branch)) base += 0.22;
+    if (p.id === 'AUT' && ['Logistik', 'Handel'].includes(branch)) base += 0.18;
+    if (p.id === 'ANA' && usage > 0.7) base += 0.12;
+    potential[p.id] = Math.round(clamp(base * (0.7 + usage * 0.45), 0.05, 0.92) * 100) / 100;
+  });
+  const churn = Math.round(clamp((100 - health) / 100 * 0.85 + (payDelay > 20 ? 0.12 : 0), 0.03, 0.9) * 100) / 100;
+  return { id: `K-${1001 + i}`, name, branch, size, owned, usage, payDelay, ticketTrend, usageTrend, health, revenue, potential, churn };
+});
+const valueOf = (c, pid) => Math.round(PRODUCTS.find((p) => p.id === pid).price * 6 * (0.6 + c.size * 0.55) / 1000) * 1000;
+const OPPS = CUSTOMERS.flatMap((c) => Object.entries(c.potential).map(([pid, prob]) => ({ c, pid, prob, value: valueOf(c, pid), exp: Math.round(valueOf(c, pid) * prob) })))
+  .sort((a, b) => b.exp - a.exp);
+const QUALIFIED = OPPS.filter((o) => o.prob >= 0.5);
+const custWithPotential = new Set(QUALIFIED.map((o) => o.c.id)).size;
+const UPSELL_SHARE = Math.round(custWithPotential / CUSTOMERS.length * 100);
+const UPSELL_EXP = QUALIFIED.reduce((s, o) => s + o.exp, 0);
+const HEALTH = Math.round(CUSTOMERS.reduce((s, c) => s + c.health, 0) / CUSTOMERS.length);
+const RISKY = [...CUSTOMERS].sort((a, b) => b.churn - a.churn).filter((c) => c.churn >= 0.45);
+const RISK_REV = RISKY.reduce((s, c) => s + c.revenue * c.churn, 0);
+const BASE_REVENUE = CUSTOMERS.reduce((s, c) => s + c.revenue, 0);
+
+// ================= Live-Zustand =================
+const S = {
+  balance: 4_820_000,
+  avgDailyOut: 168_000,
+  receivables: 4_920_000,
+  dso: 47,
+  inToday: 148_300,
+  outToday: 121_900,
+  orderToday: 212_600,
+  ordersCount: 37,
+  series: [],
+  net: [],
+  events: 0,
+  evStamps: [],
+  catsIn: { 'Kundenzahlungen': 128_400, 'Erstattungen & Sonstiges': 19_900 },
+  catsOut: { 'Lieferanten': 68_300, 'Personal': 31_200, 'Leasing & Miete': 12_800, 'Steuern & Abgaben': 5_100, 'Sonstiges': 4_500 },
+  anomalies: [],
+  stages: [ { k: 'Auftrag eingegangen', n: 37, d: 0.2 }, { k: 'Auftrag geprüft', n: 31, d: 1.9 }, { k: 'Geliefert', n: 26, d: 1.1 }, { k: 'Rechnung gestellt', n: 24, d: 0.6 }, { k: 'Zahlung eingegangen', n: 17, d: 47 } ],
+  automation: 38,
+  unlocked: { lagebild: true },
+  analysisDone: false,
+  measures: {},
+  hist: { in: [], out: [], net: [], orders: [], rec: [], cust: [] },
+};
+const TICK_MS = 1100;
+const WINDOW = 90;
+for (let i = 0; i < WINDOW; i++) { S.series.push({ in: 0, out: 0, sin: 7000, sout: 6500 }); S.net.push(0); }
+// Vorlauf: Historie füllen, damit das Diagramm beim Laden nicht leer ist
+const SR = rng(77);
+for (let i = 0; i < WINDOW; i++) { const a = SR() < .72 ? 3000 + SR() * 16000 : 0; const b = SR() < .62 ? 3000 + SR() * 15000 : 0; const lp = S.series[S.series.length - 1]; S.series.push({ in: a, out: b, sin: lp.sin * 0.62 + a * 0.38, sout: lp.sout * 0.62 + b * 0.38 }); S.series.shift(); S.net.push((S.net[S.net.length - 1] || 0) + a - b); S.net.shift(); }
+['in', 'out', 'net', 'orders', 'rec', 'cust'].forEach((k) => { for (let i = 0; i < 24; i++) S.hist[k].push(0.5 + Math.sin(i / 3 + k.length) * 0.2 + SR() * 0.2); });
+
+const OUT_CATS = [ ['Lieferanten', 0.52, 4000, 26000, ['Nordstahl Handel', 'Rhein Energie AG', 'Kurier Express', 'Datacenter Süd', 'Bürowelt Meyer']], ['Personal', 0.14, 9000, 30000, ['Gehaltslauf Teilzahlung']], ['Leasing & Miete', 0.12, 3000, 14000, ['Fuhrpark Leasing', 'Büro Frankfurt Miete']], ['Steuern & Abgaben', 0.07, 4000, 18000, ['Finanzamt USt-Vorauszahlung', 'Sozialversicherung']], ['Sonstiges', 0.15, 800, 6000, ['Software-Lizenzen', 'Reisekosten', 'Wartung']] ];
+const LR = rng(4242);
+const pick = (arr) => arr[Math.floor(LR() * arr.length)];
+
+// ================= Gauge =================
+function gauge(el, cfg) {
+  const cx = 100, cy = 104, r = 80;
+  const pt = (t, rr) => { const a = Math.PI * (1 - t); return [cx + rr * Math.cos(a), cy - rr * Math.sin(a)]; };
+  let ticks = '';
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20, maj = i % 5 === 0;
+    const [x1, y1] = pt(t, r + 9), [x2, y2] = pt(t, r + (maj ? 16 : 13));
+    ticks += `<line class="g-tick ${maj ? 'maj' : ''}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+    if (maj) { const [tx, ty] = pt(t, r + 26); ticks += `<text class="g-tl" x="${tx.toFixed(1)}" y="${(ty + 3).toFixed(1)}" text-anchor="middle">${cfg.tickFmt(cfg.min + (cfg.max - cfg.min) * t)}</text>`; }
+  }
+  const [lx, ly] = pt(0, r), [rx, ry] = pt(1, r);
+  let target = '';
+  if (cfg.target != null) { const tt = (cfg.target - cfg.min) / (cfg.max - cfg.min); const [a1, b1] = pt(tt, r - 7), [a2, b2] = pt(tt, r + 7); target = `<line class="g-target" x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}"/>`; }
+  el.innerHTML = `
+    <div class="gh"><span class="lbl">${cfg.label}</span><span class="chip ${cfg.chipClass || ''}" data-chip>${cfg.chip || ''}</span></div>
+    <svg viewBox="-12 -4 224 124" role="img" aria-label="${cfg.label}">
+      <path class="g-track" d="M${lx} ${ly} A ${r} ${r} 0 0 1 ${rx} ${ry}"/>
+      <path class="g-val" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" d="M${lx} ${ly} A ${r} ${r} 0 0 1 ${rx} ${ry}"/>
+      ${ticks}${target}
+      <g class="g-needle" style="transform: rotate(-90deg)"><path d="M98.2 104 L100 30 L101.8 104 Z"/></g>
+      <circle class="g-hub" cx="100" cy="104" r="5"/>
+    </svg>
+    <div class="gv" data-v>—</div>
+    <div class="gs" data-s>${cfg.sub || ''}</div>`;
+  const arc = el.querySelector('.g-val'), needle = el.querySelector('.g-needle'), vEl = el.querySelector('[data-v]'), sEl = el.querySelector('[data-s]'), chip = el.querySelector('[data-chip]');
+  const api = {
+    set(v, sub, cls) {
+      const t = clamp((v - cfg.min) / (cfg.max - cfg.min), 0, 1);
+      arc.style.strokeDashoffset = String(100 - t * 100);
+      arc.classList.remove('warn', 'bad');
+      const z = cls ?? (cfg.zone ? cfg.zone(v) : '');
+      if (z) arc.classList.add(z);
+      needle.style.transform = `rotate(${(t - 0.5) * 180}deg)`;
+      vEl.innerHTML = cfg.fmt(v);
+      if (sub != null) sEl.textContent = sub;
+      el.classList.remove('locked');
+      el.setAttribute('aria-label', `${cfg.label}: ${vEl.textContent}`);
+    },
+    lock(text) { arc.style.strokeDashoffset = '100'; needle.style.transform = 'rotate(-90deg)'; vEl.textContent = '—'; sEl.textContent = text; el.classList.add('locked'); },
+    chip(text, cls) { chip.textContent = text; chip.className = `chip ${cls || ''}`; },
+  };
+  return api;
+}
+
+const G = {
+  upsell: gauge($('#g-upsell'), { label: 'Upselling-Potenzial', min: 0, max: 100, fmt: (v) => `${Math.round(v)}<small>%</small>`, tickFmt: (v) => Math.round(v), chip: 'GESPERRT' }),
+  liq: gauge($('#g-liq'), { label: 'Liquiditätsreichweite', min: 0, max: 60, target: 30, fmt: (v) => `${nf1.format(v)}<small>Tage</small>`, tickFmt: (v) => Math.round(v), chip: 'LIVE', chipClass: 'live', zone: (v) => (v < 20 ? 'bad' : v < 30 ? 'warn' : '') }),
+  health: gauge($('#g-health'), { label: 'Kundengesundheit', min: 0, max: 100, target: 75, fmt: (v) => `${Math.round(v)}<small>/100</small>`, tickFmt: (v) => Math.round(v), chip: 'GESPERRT', zone: (v) => (v < 55 ? 'bad' : v < 70 ? 'warn' : '') }),
+  auto: gauge($('#g-auto'), { label: 'Automatisierungsgrad', min: 0, max: 100, target: 60, fmt: (v) => `${Math.round(v)}<small>%</small>`, tickFmt: (v) => Math.round(v), chip: 'GEMESSEN' }),
+};
+G.upsell.lock('Agentenanalyse ausstehend');
+G.health.lock('Agentenanalyse ausstehend');
+
+const liqDays = () => S.balance / S.avgDailyOut;
+function refreshGauges() {
+  const d = liqDays();
+  G.liq.set(d, `Kontostand ${mio(S.balance)} · Ziel ≥ 30 Tage`);
+  G.auto.set(S.automation, S.measures.autoCheck ? 'Auftragsprüfung automatisiert · Ziel 60 %' : 'Anteil automatisierter Prozessschritte · Ziel 60 %');
+}
+
+// ================= KPIs =================
+const KPI_DEF = [
+  { k: 'in', l: 'Eingänge heute', v: () => S.inToday, cls: 'up' },
+  { k: 'out', l: 'Ausgänge heute', v: () => S.outToday, cls: 'down' },
+  { k: 'net', l: 'Netto-Cashflow', v: () => S.inToday - S.outToday },
+  { k: 'orders', l: 'Auftragseingang', v: () => S.orderToday, sub: () => `${S.ordersCount} Aufträge` },
+  { k: 'rec', l: 'Offene Forderungen', v: () => S.receivables, sub: () => `DSO ${S.dso} Tage` },
+  { k: 'cust', l: 'Aktive Kunden', v: () => CUSTOMERS.length, raw: true, sub: () => `${CUSTOMERS.filter((c) => c.health < 55).length} kritisch` },
+];
+$('#kpis').innerHTML = KPI_DEF.map((d) => `<div class="pnl kpi"><span class="lbl">${d.l}</span><span class="v" id="kv-${d.k}">—</span><span class="d" id="kd-${d.k}"></span><svg class="spark" id="ks-${d.k}" viewBox="0 0 100 26" preserveAspectRatio="none"></svg></div>`).join('');
+function spark(id, arr, color) {
+  const max = Math.max(...arr), min = Math.min(...arr), n = arr.length;
+  const pts = arr.map((v, i) => `${(i / (n - 1) * 100).toFixed(1)},${(24 - (v - min) / (max - min || 1) * 20).toFixed(1)}`).join(' ');
+  $(id).innerHTML = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.2" vector-effect="non-scaling-stroke"/><circle cx="100" cy="${(24 - (arr[n - 1] - min) / (max - min || 1) * 20).toFixed(1)}" r="1.8" fill="${color}"/>`;
+}
+const prevK = {};
+function refreshKpis() {
+  KPI_DEF.forEach((d) => {
+    const v = d.v();
+    const el = $(`#kv-${d.k}`);
+    el.textContent = d.raw ? nf0.format(v) : mio(v);
+    if (prevK[d.k] != null && prevK[d.k] !== v) { el.classList.remove('flash-in', 'flash-out'); void el.offsetWidth; el.classList.add(v > prevK[d.k] ? 'flash-in' : 'flash-out'); }
+    prevK[d.k] = v;
+    $(`#kd-${d.k}`).textContent = d.sub ? d.sub() : 'seit 00:00 Uhr';
+    spark(`#ks-${d.k}`, S.hist[d.k], d.cls === 'down' ? col('--coral') : col('--lime-line'));
+  });
+}
+
+// ================= Stream-Diagramm =================
+const canvas = $('#stream');
+const ctx = canvas.getContext('2d');
+function drawStream() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 46, padB = 18, padT = 6;
+  const pw = w - padL - 6, ph = h - padB - padT;
+  const maxV = Math.max(12000, ...S.series.map((s) => Math.max(s.sin, s.sout))) * 1.15;
+  const yv = (v) => padT + ph - v / maxV * ph;
+  ctx.font = '10px "Geist Mono", monospace';
+  ctx.fillStyle = col('--fg-3'); ctx.strokeStyle = col('--line'); ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = maxV / 4 * i, y = Math.round(yv(v)) + .5;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - 6, y); ctx.stroke();
+    ctx.fillText(`${Math.round(v / 1000)}k`, 6, y + 3);
+  }
+  ctx.fillText('−90 Takte', padL, h - 4);
+  ctx.fillText('jetzt', w - 32, h - 4);
+  const n = S.series.length, xs = (i) => padL + i / (n - 1) * pw;
+  const line = (key, color, fill) => {
+    ctx.beginPath();
+    S.series.forEach((s, i) => { const x = xs(i), y = yv(s[key]); if (!i) ctx.moveTo(x, y); else { const px = xs(i - 1), py = yv(S.series[i - 1][key]); ctx.bezierCurveTo((px + x) / 2, py, (px + x) / 2, y, x, y); } });
+    ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.lineTo(xs(n - 1), yv(0)); ctx.lineTo(xs(0), yv(0)); ctx.closePath();
+    const g = ctx.createLinearGradient(0, padT, 0, padT + ph); g.addColorStop(0, fill); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fill();
+  };
+  line('sout', col('--coral'), alpha(col('--coral'), 0.13));
+  line('sin', col('--lime-line'), alpha(col('--lime-line'), 0.18));
+  // Netto kumuliert, eigene Normierung auf die Diagrammhöhe
+  const nmin = Math.min(...S.net), nmax = Math.max(...S.net);
+  ctx.beginPath();
+  S.net.forEach((v, i) => { const y = padT + ph - (v - nmin) / (nmax - nmin || 1) * ph * 0.8 - ph * 0.1; i ? ctx.lineTo(xs(i), y) : ctx.moveTo(xs(i), y); });
+  ctx.strokeStyle = col('--fg-3'); ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+  const last = S.series[n - 1];
+  [['sin', col('--lime-line')], ['sout', col('--coral')]].forEach(([k, c]) => { ctx.beginPath(); ctx.arc(xs(n - 1), yv(last[k]), 3, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); });
+  // Anomalie-Marker
+  S.series.forEach((s, i) => { if (s.anomaly) { ctx.strokeStyle = col('--amber'); ctx.beginPath(); ctx.moveTo(xs(i) + .5, padT); ctx.lineTo(xs(i) + .5, padT + ph); ctx.stroke(); ctx.fillStyle = col('--amber'); ctx.fillText('!', xs(i) + 3, padT + 10); } });
+}
+addEventListener('resize', drawStream);
+
+// ================= Ticker =================
+const tickerEl = $('#ticker');
+function addEvent(e) {
+  const li = document.createElement('li');
+  const t = new Date().toLocaleTimeString('de-DE');
+  li.innerHTML = `<span class="t">${t}</span><span class="who"><b>${e.who}</b><span>${e.what}</span></span><span class="amt ${e.dir === 'in' ? 'up' : e.dir === 'out' ? 'down' : ''}">${e.dir === 'in' ? '+' : e.dir === 'out' ? '−' : ''}${eur(e.amount)}</span>${e.flag ? `<span class="flag ${e.flagW ? 'w' : ''}">▸ ${e.flag}</span>` : ''}`;
+  tickerEl.prepend(li);
+  while (tickerEl.children.length > 14) tickerEl.lastChild.remove();
+  S.events++; S.evStamps.push(Date.now());
+}
+
+// ================= Tick =================
+let tickN = 0;
+function tick() {
+  tickN++;
+  let tin = 0, tout = 0, anomaly = false;
+  if (LR() < 0.72) {
+    const c = pick(CUSTOMERS);
+    const amt = Math.round(c.revenue / (90 + LR() * 110) / 10) * 10;
+    tin += amt; S.inToday += amt; S.catsIn['Kundenzahlungen'] += amt; S.receivables -= amt;
+    let flag = null, flagW = false;
+    if (S.analysisDone) {
+      if (c.payDelay > 18) { flag = `Agent: Zahlung ${c.payDelay} Tage nach Fälligkeit, Risikoscore aktualisiert`; flagW = true; }
+      else if (c.churn >= 0.45) flag = 'Agent: Zahlung eines Risikokunden, Frühwarnung bleibt aktiv';
+    }
+    addEvent({ who: c.name, what: 'Zahlungseingang · Rechnung beglichen', amount: amt, dir: 'in', flag, flagW });
+    if (LR() < 0.5 && S.stages[4].n < S.stages[3].n) S.stages[4].n++;
+  }
+  if (LR() < 0.62) {
+    const r = LR(); let acc = 0; let cat = OUT_CATS[0];
+    for (const oc of OUT_CATS) { acc += oc[1]; if (r <= acc) { cat = oc; break; } }
+    let amt = Math.round((cat[2] + LR() * (cat[3] - cat[2])) / 10) * 10;
+    let flag = null, flagW = false;
+    if (tickN % 23 === 0) { amt = Math.round(amt * 3.1); anomaly = true; }
+    tout += amt; S.outToday += amt; S.catsOut[cat[0]] += amt;
+    if (anomaly) {
+      const a = { t: new Date().toLocaleTimeString('de-DE'), who: pick(cat[4]), amt, cat: cat[0], text: `Betrag ${nf0.format(Math.round(amt / ((cat[2] + cat[3]) / 2) * 100 - 100))} % über Ø der Kategorie` };
+      if (S.analysisDone) { S.anomalies.unshift(a); S.anomalies = S.anomalies.slice(0, 6); flag = `Agent: Abweichung erkannt, ${a.text}. Zur Prüfung markiert`; flagW = true; }
+    }
+    addEvent({ who: pick(cat[4]), what: `Zahlungsausgang · ${cat[0]}`, amount: amt, dir: 'out', flag, flagW });
+  }
+  if (LR() < 0.45) {
+    const c = pick(CUSTOMERS);
+    const amt = Math.round(c.revenue / (20 + LR() * 40) / 10) * 10;
+    S.orderToday += amt; S.ordersCount++; S.receivables += Math.round(amt * 0.4);
+    S.stages[0].n++;
+    for (let i = 1; i < 4; i++) if (S.stages[i].n < S.stages[i - 1].n && LR() < (S.measures.autoCheck && i === 1 ? 0.8 : 0.45)) S.stages[i].n++;
+    let flag = null;
+    if (S.analysisDone && c.potential && Object.keys(c.potential).length) {
+      const best = Object.entries(c.potential).sort((a, b) => b[1] - a[1])[0];
+      if (best[1] >= 0.5) flag = `Agent: Cross-Selling-Chance ${PRODUCTS.find((p) => p.id === best[0]).name} (${Math.round(best[1] * 100)} %)`;
+    }
+    addEvent({ who: c.name, what: 'Neuer Auftrag · ERP', amount: amt, dir: 'order', flag });
+  }
+  S.balance += tin - tout;
+  const lp = S.series[S.series.length - 1];
+  S.series.push({ in: tin, out: tout, anomaly, sin: lp.sin * 0.62 + tin * 0.38, sout: lp.sout * 0.62 + tout * 0.38 }); S.series.shift();
+  S.net.push(S.net[S.net.length - 1] + tin - tout); S.net.shift();
+  if (tickN % 3 === 0) {
+    const push = (k, v) => { S.hist[k].push(v); S.hist[k].shift(); };
+    push('in', S.inToday); push('out', S.outToday); push('net', S.inToday - S.outToday); push('orders', S.orderToday); push('rec', S.receivables); push('cust', CUSTOMERS.length + (tickN % 2));
+  }
+  const now = Date.now(); S.evStamps = S.evStamps.filter((t) => now - t < 60000);
+  $('#evRate').textContent = S.evStamps.length;
+  refreshKpis(); refreshGauges(); drawStream();
+  if (current === 'cashflow' && S.unlocked.cashflow) renderCashflow(true);
+  if (current === 'prozesse' && S.unlocked.prozesse) renderProzesse(true);
+}
+setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('de-DE'); }, 1000);
+$('#clock').textContent = new Date().toLocaleTimeString('de-DE');
+
+// ================= Kalkulator =================
+const CALC_DEF = [
+  { k: 'cust', l: 'Anzahl Kunden', min: 50, max: 5000, step: 50, v: 400, f: (v) => nf0.format(v) },
+  { k: 'rev', l: 'Ø Jahresumsatz je Kunde', min: 5000, max: 500000, step: 5000, v: 60000, f: (v) => eur(v) },
+  { k: 'xs', l: 'Kunden mit Zusatzabschluss', min: 1, max: 40, step: 1, v: 12, f: (v) => `${v} %` },
+  { k: 'vol', l: 'Zusatzvolumen je Abschluss', min: 5, max: 60, step: 1, v: 20, f: (v) => `${v} % vom Umsatz` },
+  { k: 'churn', l: 'Abwanderung heute', min: 0, max: 30, step: 1, v: 9, f: (v) => `${v} % p. a.` },
+  { k: 'save', l: 'Davon durch Frühwarnung gehalten', min: 0, max: 60, step: 5, v: 30, f: (v) => `${v} %` },
+  { k: 'margin', l: 'Deckungsbeitragsquote', min: 10, max: 90, step: 5, v: 55, f: (v) => `${v} %` },
+];
+const C = {};
+CALC_DEF.forEach((d) => (C[d.k] = d.v));
+$('#calcIn').innerHTML = CALC_DEF.map((d) => `<div class="slider"><label for="cl-${d.k}">${d.l}</label><output id="co-${d.k}" for="cl-${d.k}">${d.f(d.v)}</output><input type="range" id="cl-${d.k}" min="${d.min}" max="${d.max}" step="${d.step}" value="${d.v}"></div>`).join('');
+const GC = gauge($('#g-calc'), { label: 'Umsatzhebel', min: 0, max: 30, target: 10, fmt: (v) => `${nf1.format(v)}<small>% vom Umsatz</small>`, tickFmt: (v) => `${Math.round(v)}`, chip: 'SZENARIO' });
+function setTrack(inp) { const p = (inp.value - inp.min) / (inp.max - inp.min) * 100; inp.style.setProperty('--p', `${p}%`); }
+function calc() {
+  const base = C.cust * C.rev;
+  const xsell = C.cust * (C.xs / 100) * C.rev * (C.vol / 100);
+  const kept = base * (C.churn / 100) * (C.save / 100);
+  const total = xsell + kept;
+  const db = total * (C.margin / 100);
+  GC.set(total / base * 100, `${mio(total)} zusätzlich bzw. gesichert pro Jahr`);
+  $('#calcRes').innerHTML = `
+    <div class="res-row"><span>Bestandsumsatz</span><b>${mio(base)}</b></div>
+    <div class="res-row"><span>Cross-Selling-Umsatz</span><b class="up">+${mio(xsell)}</b></div>
+    <div class="res-row"><span>Gehaltener Umsatz (weniger Abwanderung)</span><b class="up">+${mio(kept)}</b></div>
+    <div class="res-row"><span>Davon Deckungsbeitrag</span><b>${mio(db)}</b></div>
+    <div class="res-total"><span class="lbl">Umsatzhebel pro Jahr</span><b>${mio(total)}</b></div>`;
+}
+CALC_DEF.forEach((d) => {
+  const inp = $(`#cl-${d.k}`); setTrack(inp);
+  inp.addEventListener('input', () => { C[d.k] = Number(inp.value); $(`#co-${d.k}`).textContent = d.f(C[d.k]); setTrack(inp); calc(); });
+});
+$('#calcReset').addEventListener('click', () => { CALC_DEF.forEach((d) => { C[d.k] = d.v; const i = $(`#cl-${d.k}`); i.value = d.v; setTrack(i); $(`#co-${d.k}`).textContent = d.f(d.v); }); calc(); });
+
+// ================= Tabs =================
+let current = 'lagebild';
+const TAB_INFO = {
+  umsatz: { agent: 'Umsatz-Agent', text: 'Der Umsatz-Agent bewertet jede Kunde-Produkt-Kombination und schaltet die Potenzialmatrix mit priorisierten Chancen frei.' },
+  cashflow: { agent: 'Cashflow-Agent', text: 'Der Cashflow-Agent überwacht jeden Zahlungsstrom, erstellt eine 13-Wochen-Prognose und markiert Auffälligkeiten.' },
+  risiko: { agent: 'Risiko-Agent', text: 'Der Risiko-Agent kombiniert Nutzung, Zahlungsverhalten und Tickets zu einem Abwanderungsrisiko je Kunde.' },
+  prozesse: { agent: 'Prozess-Agent', text: 'Der Prozess-Agent misst den Order-to-Cash-Fluss live, findet Engpässe und beziffert das Automatisierungspotenzial.' },
+};
+function lockedHTML(k) {
+  return `<div class="locked-screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="lbl">Gesperrt · wird durch ${TAB_INFO[k].agent} freigeschaltet</span><h2>${document.querySelector(`[data-tab="${k}"]`).textContent.replace(/^\d+|NEU/g, '').trim()}</h2><p>${TAB_INFO[k].text}</p><button class="btn btn-lime" data-run>Agentenanalyse starten</button></div>`;
+}
+function show(k) {
+  current = k;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === k)));
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${k}`));
+  const tabEl = document.querySelector(`[data-tab="${k}"]`); tabEl.querySelector('.badge')?.classList.remove('new');
+  if (k !== 'lagebild') {
+    const v = $(`#view-${k}`);
+    if (!S.unlocked[k]) v.innerHTML = lockedHTML(k);
+    else ({ umsatz: renderUmsatz, cashflow: renderCashflow, risiko: renderRisiko, prozesse: renderProzesse })[k]();
+  } else drawStream();
+  try { if (location.hash.slice(1) !== k) history.replaceState(null, '', `#${k}`); } catch (e) {}
+}
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
+document.addEventListener('click', (e) => { if (e.target.closest('[data-run]')) startRun(); });
+function unlock(k) {
+  S.unlocked[k] = true;
+  const t = document.querySelector(`[data-tab="${k}"]`);
+  t.classList.add('unlocked', 'just-unlocked');
+  setTimeout(() => t.classList.remove('just-unlocked'), 1500);
+  if (current === k) show(k);
+}
+
+// ================= Bereich: Umsatzpotenzial =================
+function heatColor(p) { const a = clamp((p - 0.1) / 0.8, 0, 1); return `rgba(${document.documentElement.dataset.mode === 'dark' ? '200, 241, 53' : '150, 190, 20'}, ${(0.12 + a * 0.85).toFixed(2)})`; }
+function renderUmsatz() {
+  const rows = [...CUSTOMERS].sort((a, b) => Math.max(0, ...Object.values(b.potential)) - Math.max(0, ...Object.values(a.potential))).slice(0, 14);
+  const top = QUALIFIED.slice(0, 8);
+  $('#view-umsatz').innerHTML = `
+    <div class="grid g4">
+      <div class="pnl corner gauge" id="gu-share"></div>
+      <div class="pnl kpi"><span class="lbl">Qualifizierte Chancen</span><span class="v">${QUALIFIED.length}</span><span class="d">Kaufwahrscheinlichkeit ≥ 50 %</span></div>
+      <div class="pnl kpi"><span class="lbl">Erwarteter Zusatzumsatz</span><span class="v up">${mio(UPSELL_EXP)}</span><span class="d">risikogewichtet, pro Jahr</span></div>
+      <div class="pnl kpi"><span class="lbl">Anteil am Bestandsumsatz</span><span class="v">${nf1.format(UPSELL_EXP / BASE_REVENUE * 100)} %</span><span class="d">Bestand ${mio(BASE_REVENUE)}</span></div>
+    </div>
+    <div class="grid g3">
+      <div class="pnl span2">
+        <div class="pnl-h"><h3>Potenzialmatrix Kunde × Produkt</h3><span class="chip ai">AGENT</span><div class="r note">Zelle anklicken · □ = bereits im Einsatz</div></div>
+        <div class="pnl-b scroll-x"><div class="heat" style="grid-template-columns: minmax(150px, 1.4fr) repeat(${PRODUCTS.length}, minmax(52px, 1fr)); min-width: 560px">
+          <div></div>${PRODUCTS.map((p) => `<div class="hh">${p.name}</div>`).join('')}
+          ${rows.map((c) => `<div class="hn" title="${c.name}">${c.name}</div>${PRODUCTS.map((p) => c.owned.has(p.id) ? `<div class="hc own" aria-label="${c.name} nutzt ${p.name}">□</div>` : `<button class="hc" style="background:${heatColor(c.potential[p.id])}" data-opp="${c.id}|${p.id}" aria-label="${c.name}, ${p.name}: ${Math.round(c.potential[p.id] * 100)} Prozent">${Math.round(c.potential[p.id] * 100)}</button>`).join('')}`).join('')}
+        </div></div>
+      </div>
+      <div class="pnl">
+        <div class="pnl-h"><h3>Detail</h3></div>
+        <div class="pnl-b" id="oppDetail"><p class="note">Wählen Sie eine Zelle der Matrix oder eine Chance aus der Liste.</p></div>
+      </div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-h"><h3>Top-Chancen</h3><span class="chip ai">PRIORISIERT</span></div>
+      <div class="scroll-x"><table class="tbl">
+        <thead><tr><th>Kunde</th><th>Produkt</th><th class="r">Wahrscheinlichkeit</th><th class="r">Wert</th><th class="r">Erwartet</th><th class="r"></th></tr></thead>
+        <tbody>${top.map((o) => `<tr><td>${o.c.name}<div class="note">${o.c.branch}</div></td><td>${PRODUCTS.find((p) => p.id === o.pid).name}</td><td class="r"><span class="pbar"><span><i style="width:${o.prob * 100}%"></i></span><span class="m" style="width:auto;background:none;height:auto">${Math.round(o.prob * 100)} %</span></span></td><td class="r m">${eur(o.value)}</td><td class="r m up">${eur(o.exp)}</td><td class="r"><button class="btn btn-sm" data-offer="${o.c.id}|${o.pid}">${S.measures['offer-' + o.c.id + o.pid] ? 'Vorbereitet ✓' : 'Angebot vorbereiten'}</button></td></tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  const g = gauge($('#gu-share'), { label: 'Kunden mit Potenzial', min: 0, max: 100, fmt: (v) => `${Math.round(v)}<small>%</small>`, tickFmt: (v) => Math.round(v), chip: 'AGENT', chipClass: 'ai' });
+  g.lock(''); requestAnimationFrame(() => g.set(UPSELL_SHARE, `${custWithPotential} von ${CUSTOMERS.length} Kunden`));
+}
+document.addEventListener('click', (e) => {
+  const cell = e.target.closest('[data-opp]');
+  if (cell) {
+    const [cid, pid] = cell.dataset.opp.split('|');
+    const c = CUSTOMERS.find((x) => x.id === cid), p = PRODUCTS.find((x) => x.id === pid), prob = c.potential[pid], val = valueOf(c, pid);
+    const why = [];
+    if (pid === 'CMP' && ['Bank', 'Versicherung', 'Finanzdienstl.'].includes(c.branch)) why.push(`Regulierte Branche (${c.branch})`);
+    if (pid === 'AUT' && ['Logistik', 'Handel'].includes(c.branch)) why.push('Hohes Prozessvolumen in der Branche');
+    if (c.usage > 0.7) why.push(`Hohe Nutzung: ${Math.round(c.usage * 100)} % aktive Lizenzen`);
+    if (c.usageTrend > 10) why.push(`Nutzung wächst (+${c.usageTrend} %)`);
+    if (!why.length) why.push(`Nutzungsquote ${Math.round(c.usage * 100)} %`);
+    $('#oppDetail').innerHTML = `<div style="display:flex;flex-direction:column;gap:10px"><div><b>${c.name}</b><div class="note">${c.branch} · ${c.id}</div></div><div class="lbl">${p.name}</div><div class="mono" style="font-size:24px;color:var(--lime-ink)">${Math.round(prob * 100)} %</div><div class="res-row"><span>Angebotswert</span><b>${eur(val)}</b></div><div class="res-row"><span>Erwartet</span><b class="up">${eur(val * prob)}</b></div><div class="lbl">Signale</div><ul class="list-plain" style="margin:0;padding-left:16px;font-size:12px;color:var(--fg-2)">${why.map((w) => `<li>${w}</li>`).join('')}</ul><button class="btn btn-sm btn-lime" data-offer="${c.id}|${p.id}">Angebot vorbereiten</button></div>`;
+  }
+  const off = e.target.closest('[data-offer]');
+  if (off) {
+    const [cid, pid] = off.dataset.offer.split('|');
+    if (S.measures['offer-' + cid + pid]) return;
+    if (running) { toast('Bitte warten, bis die laufende Analyse fertig ist.'); return; }
+    const c = CUSTOMERS.find((x) => x.id === cid), p = PRODUCTS.find((x) => x.id === pid);
+    off.disabled = true; off.textContent = 'Agent arbeitet …';
+    miniRun(`Angebot ${p.name} für ${c.name}`, [
+      ['ai', `Angebots-Agent: lese Profil ${c.id} und Vertragsdaten`],
+      ['', `Preis ${eur(valueOf(c, pid))} gemäß Tarif, Rabattgrenze 15 % eingehalten`],
+      ['', `Begründung aus ${c.usageTrend > 10 ? 'Nutzungswachstum' : 'Nutzungsprofil'} und Branche ${c.branch} formuliert`],
+      ['w', 'Compliance-Agent: Freigabe durch Vertrieb erforderlich, kein automatischer Versand'],
+      ['ok', '✓ Angebotsentwurf bereit · Versand simuliert, keine E-Mail verschickt'],
+    ], () => { S.measures['offer-' + cid + pid] = true; toast(`Angebot vorbereitet: <b>${c.name}</b>`); if (current === 'umsatz') renderUmsatz(); });
+  }
+});
+
+// ================= Bereich: Cashflow =================
+const FC = (() => { const r = rng(913); let bal = S.balance; return Array.from({ length: 13 }, (_, i) => { const inn = 1_050_000 + r() * 380_000 + (i === 4 || i === 8 ? 260_000 : 0); const out = 1_090_000 + r() * 300_000 + (i === 2 || i === 6 || i === 10 ? 340_000 : 0); bal += inn - out; return { w: `KW ${45 + i > 52 ? 45 + i - 52 : 45 + i}`, inn, out, bal }; }); })();
+function renderCashflow(live) {
+  const v = $('#view-cashflow');
+  const inTotal = Object.values(S.catsIn).reduce((a, b) => a + b, 0), outTotal = Object.values(S.catsOut).reduce((a, b) => a + b, 0);
+  const catRows = (obj, total, cls) => Object.entries(obj).map(([k, val]) => `<div class="res-row"><span>${k}</span><span class="pbar"><span><i class="${cls}" style="width:${val / total * 100}%"></i></span><b>${mio(val)}</b></span></div>`).join('');
+  if (live && $('#cf-in')) {
+    $('#cf-in').innerHTML = catRows(S.catsIn, inTotal, '');
+    $('#cf-out').innerHTML = catRows(S.catsOut, outTotal, 'c');
+    $('#cf-anom').innerHTML = anomHTML();
+    $('#cf-bal').textContent = mio(S.balance);
+    return;
+  }
+  const maxV = Math.max(...FC.map((f) => Math.max(f.inn, f.out)));
+  const minB = Math.min(...FC.map((f) => f.bal)), maxB = Math.max(...FC.map((f) => f.bal));
+  const W = 640, H = 220, pl = 44, pb = 22, bw = (W - pl) / 13;
+  const y = (val) => H - pb - val / maxV * (H - pb - 10);
+  const yb = (b) => H - pb - (b - minB) / (maxB - minB || 1) * (H - pb - 30) - 10;
+  const bars = FC.map((f, i) => { const x = pl + i * bw; return `<rect x="${x + bw * 0.14}" y="${y(f.inn)}" width="${bw * 0.32}" height="${H - pb - y(f.inn)}" style="fill:var(--lime-line)" opacity=".85" rx="1"><title>${f.w} Eingänge ${eur(f.inn)}</title></rect><rect x="${x + bw * 0.5}" y="${y(f.out)}" width="${bw * 0.32}" height="${H - pb - y(f.out)}" style="fill:var(--coral)" opacity=".85" rx="1"><title>${f.w} Ausgänge ${eur(f.out)}</title></rect><text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" class="g-tl">${f.w.replace('KW ', '')}</text>`; }).join('');
+  const balPts = FC.map((f, i) => `${pl + i * bw + bw / 2},${yb(f.bal)}`).join(' ');
+  const low = FC.reduce((m, f) => (f.bal < m.bal ? f : m), FC[0]);
+  v.innerHTML = `
+    <div class="grid g4">
+      <div class="pnl corner gauge" id="gc-liq"></div>
+      <div class="pnl kpi"><span class="lbl">Kontostand live</span><span class="v" id="cf-bal">${mio(S.balance)}</span><span class="d">aktualisiert je Ereignis</span></div>
+      <div class="pnl kpi"><span class="lbl">Tiefster Stand (Prognose)</span><span class="v ${low.bal < 3_500_000 ? 'down' : ''}">${mio(low.bal)}</span><span class="d">${low.w}</span></div>
+      <div class="pnl kpi"><span class="lbl">DSO</span><span class="v">${S.measures.dunning ? S.dso - 6 : S.dso} Tage</span><span class="d">${S.measures.dunning ? 'mit automatisiertem Mahnlauf' : 'Ziel 40 Tage'}</span></div>
+    </div>
+    <div class="grid g3">
+      <div class="pnl span2">
+        <div class="pnl-h"><h3>13-Wochen-Liquiditätsprognose</h3><span class="chip ai">AGENT</span><div class="r legend"><span><i style="background:var(--lime-line)"></i>Eingänge</span><span><i style="background:var(--coral)"></i>Ausgänge</span><span><i style="background:var(--cyan)"></i>Kontostand</span></div></div>
+        <div class="pnl-b scroll-x"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:480px;height:auto;display:block" role="img" aria-label="Balken je Kalenderwoche für Ein- und Ausgänge, Linie für den Kontostand">
+          ${[0, .25, .5, .75, 1].map((t) => `<line x1="${pl}" x2="${W}" y1="${y(maxV * t)}" y2="${y(maxV * t)}" style="stroke:var(--line)"/><text x="4" y="${y(maxV * t) + 3}" class="g-tl">${(maxV * t / 1e6).toFixed(1).replace('.', ',')} M</text>`).join('')}
+          ${bars}
+          <polyline points="${balPts}" fill="none" style="stroke:var(--cyan)" stroke-width="1.8"/>
+          ${FC.map((f, i) => `<circle cx="${pl + i * bw + bw / 2}" cy="${yb(f.bal)}" r="2.6" style="fill:var(--panel);stroke:var(--cyan)" stroke-width="1.4"><title>${f.w} Kontostand ${eur(f.bal)}</title></circle>`).join('')}
+        </svg></div>
+      </div>
+      <div class="pnl">
+        <div class="pnl-h"><h3>Auffälligkeiten</h3><span class="chip warn">LIVE-ERKENNUNG</span></div>
+        <ul class="list-ins" id="cf-anom">${anomHTML()}</ul>
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="pnl"><div class="pnl-h"><h3>Eingänge heute nach Kategorie</h3><span class="chip live">LIVE</span></div><div class="pnl-b" id="cf-in">${catRows(S.catsIn, inTotal, '')}</div></div>
+      <div class="pnl"><div class="pnl-h"><h3>Ausgänge heute nach Kategorie</h3><span class="chip live">LIVE</span></div><div class="pnl-b" id="cf-out">${catRows(S.catsOut, outTotal, 'c')}</div></div>
+    </div>`;
+  const g = gauge($('#gc-liq'), { label: 'Liquiditätsreichweite', min: 0, max: 60, target: 30, fmt: (x) => `${nf1.format(x)}<small>Tage</small>`, tickFmt: (x) => Math.round(x), chip: 'LIVE', chipClass: 'live', zone: (x) => (x < 20 ? 'bad' : x < 30 ? 'warn' : '') });
+  g.lock(''); requestAnimationFrame(() => g.set(liqDays(), S.measures.dunning ? 'inkl. Mahnlauf-Effekt' : 'Ziel ≥ 30 Tage'));
+}
+function anomHTML() {
+  if (!S.anomalies.length) return `<li><i></i><div><b>Überwachung aktiv</b><p>Der Cashflow-Agent prüft jeden Zahlungsausgang gegen das Muster seiner Kategorie. Treffer erscheinen hier und im Ereignisstrom.</p></div><span></span></li>`;
+  return S.anomalies.map((a) => `<li class="w"><i></i><div><b>${a.who}</b><p>${a.cat} · ${a.text} · ${a.t}</p></div><span class="m down">−${eur(a.amt)}</span></li>`).join('');
+}
+
+// ================= Bereich: Kundenrisiko =================
+function renderRisiko() {
+  const buckets = [['Niedrig', CUSTOMERS.filter((c) => c.churn < 0.25)], ['Mittel', CUSTOMERS.filter((c) => c.churn >= 0.25 && c.churn < 0.45)], ['Hoch', CUSTOMERS.filter((c) => c.churn >= 0.45)]];
+  const W = 520, H = 230, pl = 36, pb = 26;
+  const xs = (u) => pl + u * (W - pl - 28), ys = (h) => H - pb - h / 100 * (H - pb - 10);
+  $('#view-risiko').innerHTML = `
+    <div class="grid g4">
+      <div class="pnl corner gauge" id="gr-health"></div>
+      ${buckets.map(([k, l]) => `<div class="pnl kpi"><span class="lbl">Risiko ${k}</span><span class="v ${k === 'Hoch' ? 'down' : ''}">${l.length} Kunden</span><span class="d">${mio(l.reduce((s, c) => s + c.revenue, 0))} Jahresumsatz</span></div>`).join('')}
+    </div>
+    <div class="grid g3">
+      <div class="pnl span2">
+        <div class="pnl-h"><h3>Nutzung × Gesundheit</h3><span class="chip ai">AGENT</span><div class="r legend"><span><i style="background:var(--lime-line);height:6px;width:6px;border-radius:50%"></i>stabil</span><span><i style="background:var(--amber);height:6px;width:6px;border-radius:50%"></i>beobachten</span><span><i style="background:var(--coral);height:6px;width:6px;border-radius:50%"></i>Abwanderungsrisiko</span></div></div>
+        <div class="pnl-b scroll-x"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:420px;height:auto;display:block" role="img" aria-label="Streudiagramm Nutzung gegen Kundengesundheit">
+          ${[0, 25, 50, 75, 100].map((h) => `<line x1="${pl}" x2="${W - 10}" y1="${ys(h)}" y2="${ys(h)}" style="stroke:var(--line)"/><text x="6" y="${ys(h) + 3}" class="g-tl">${h}</text>`).join('')}
+          ${[0, .25, .5, .75, 1].map((u) => `<text x="${xs(u)}" y="${H - 8}" text-anchor="middle" class="g-tl">${u * 100} %</text>`).join('')}
+          <text x="${W - 10}" y="${H - 8}" text-anchor="end" class="g-tl" style="display:none">Nutzung</text>
+          ${CUSTOMERS.map((c) => { const cv = c.churn >= 0.45 ? 'var(--coral)' : c.churn >= 0.25 ? 'var(--amber)' : 'var(--lime-line)'; return `<circle cx="${xs(c.usage)}" cy="${ys(c.health)}" r="${4 + c.size * 2.2}" style="fill:${cv};stroke:var(--panel)" fill-opacity=".78" stroke-width="2"><title>${c.name}: Nutzung ${Math.round(c.usage * 100)} %, Gesundheit ${c.health}, Risiko ${Math.round(c.churn * 100)} %</title></circle>`; }).join('')}
+        </svg><p class="note">x: aktive Lizenzen · y: Gesundheitsindex · Größe: Umsatz</p></div>
+      </div>
+      <div class="pnl">
+        <div class="pnl-h"><h3>Frühwarnungen</h3><span class="chip warn">${RISKY.length} AKTIV</span></div>
+        <ul class="list-ins">${RISKY.slice(0, 6).map((c) => { const sig = []; if (c.payDelay > 15) sig.push(`Zahlungsverzug ${c.payDelay} T.`); if (c.usageTrend < -10) sig.push(`Nutzung ${c.usageTrend} %`); if (c.ticketTrend > 20) sig.push(`Tickets +${c.ticketTrend} %`); if (!sig.length) sig.push(`Gesundheit ${c.health}/100`); return `<li class="c"><i></i><div><b>${c.name}</b><p>${sig.join(' · ')}</p></div><span class="m">${Math.round(c.churn * 100)} %</span></li>`; }).join('')}</ul>
+      </div>
+    </div>
+    <div class="pnl"><div class="pnl-h"><h3>Gefährdeter Umsatz</h3></div><div class="pnl-b" style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+      <div><span class="lbl">Risikogewichtet</span><div class="mono down" style="font-size:24px">${mio(RISK_REV)}</div></div>
+      <p style="color:var(--fg-2);max-width:60ch;flex:1">Der Risiko-Agent empfiehlt für ${Math.min(3, RISKY.length)} Kunden einen Rückgewinnungsplan. Bei 30 % Erfolgsquote würden rund ${mio(RISK_REV * 0.3)} Umsatz gehalten.</p>
+      <button class="btn ${S.measures.early ? '' : 'btn-lime'}" data-measure="early">${S.measures.early ? 'Frühwarnsystem aktiv ✓' : 'Frühwarnsystem aktivieren'}</button>
+    </div></div>`;
+  const g = gauge($('#gr-health'), { label: 'Kundengesundheit', min: 0, max: 100, target: 75, fmt: (x) => `${Math.round(x)}<small>/100</small>`, tickFmt: (x) => Math.round(x), chip: 'AGENT', chipClass: 'ai', zone: (x) => (x < 55 ? 'bad' : x < 70 ? 'warn' : '') });
+  g.lock(''); requestAnimationFrame(() => g.set(healthNow(), `Ø über ${CUSTOMERS.length} Kunden`));
+}
+const healthNow = () => HEALTH + (S.measures.early ? 6 : 0);
+
+// ================= Bereich: Prozesse =================
+function renderProzesse(live) {
+  const st = S.stages;
+  const max = st[0].n;
+  const bottleneck = S.measures.autoCheck ? -1 : 1;
+  const html = st.map((s, i) => `<div class="stage ${i === bottleneck ? 'bottleneck' : ''}"><span>${s.k}${i === bottleneck ? ' <span class="chip warn">ENGPASS</span>' : ''}</span><span class="track"><span class="fill" style="width:${s.n / max * 100}%"></span>${!reduced ? '<span class="flowdots"></span>' : ''}</span><span class="m">${s.n}</span><span class="m m2">${i === 4 ? `${S.measures.dunning ? S.dso - 6 : S.dso} T.` : `${nf1.format(i === 1 && S.measures.autoCheck ? 0.3 : s.d)} T.`}</span></div>`).join('');
+  if (live && $('#funnel')) { $('#funnel').innerHTML = html; return; }
+  const manualH = Math.round(S.ordersCount * 21 * 12 * 0.6);
+  $('#view-prozesse').innerHTML = `
+    <div class="grid g4">
+      <div class="pnl corner gauge" id="gp-auto"></div>
+      <div class="pnl kpi"><span class="lbl">Durchlaufzeit Order-to-Cash</span><span class="v">${nf1.format(st.reduce((a, s, i) => a + (i === 1 && S.measures.autoCheck ? 0.3 : i === 4 ? (S.measures.dunning ? S.dso - 6 : S.dso) : s.d), 0))} Tage</span><span class="d">Auftrag bis Zahlung</span></div>
+      <div class="pnl kpi"><span class="lbl">Manuelle Prüfschritte</span><span class="v">${S.measures.autoCheck ? '3' : '11'} je Auftrag</span><span class="d">${S.measures.autoCheck ? 'nach Automatisierung' : 'Auftragsprüfung, Bonität, Preise'}</span></div>
+      <div class="pnl kpi"><span class="lbl">Automatisierbare Stunden</span><span class="v up">${nf0.format(manualH)} Std.</span><span class="d">pro Jahr, Annahme 36 Min. je Auftrag</span></div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-h"><h3>Order-to-Cash live</h3><span class="chip live">LIVE</span><div class="r note">Aufträge heute je Stufe · Ø Verweildauer</div></div>
+      <div class="pnl-b funnel" id="funnel">${html}</div>
+    </div>
+    <div class="grid g2">
+      <div class="pnl"><div class="pnl-h"><h3>Befund des Prozess-Agenten</h3><span class="chip ai">AGENT</span></div><ul class="list-ins">
+        <li class="w"><i></i><div><b>Auftragsprüfung ist der Engpass</b><p>Ø 1,9 Tage Verweildauer, 11 manuelle Prüfschritte. 74 % der Prüfungen folgen festen Regeln.</p></div><span></span></li>
+        <li><i></i><div><b>Rechnungsstellung stabil</b><p>Ø 0,6 Tage nach Lieferung, keine Auffälligkeit.</p></div><span></span></li>
+        <li class="w"><i></i><div><b>Zahlungseingang dauert lange</b><p>DSO ${S.dso} Tage. Automatisierter Mahnlauf verkürzt um ca. 6 Tage.</p></div><span></span></li>
+      </ul></div>
+      <div class="pnl"><div class="pnl-h"><h3>Maßnahmen simulieren</h3></div><div class="pnl-b" style="display:flex;flex-direction:column;gap:10px">
+        <div class="res-row"><span>Auftragsprüfung automatisieren</span><button class="btn btn-sm ${S.measures.autoCheck ? '' : 'btn-lime'}" data-measure="autoCheck">${S.measures.autoCheck ? 'Aktiv ✓' : 'Simulieren'}</button></div>
+        <div class="res-row"><span>Mahnlauf automatisieren</span><button class="btn btn-sm ${S.measures.dunning ? '' : 'btn-lime'}" data-measure="dunning">${S.measures.dunning ? 'Aktiv ✓' : 'Simulieren'}</button></div>
+        <p class="note">Effekte sind Annahmen der Demo und wirken auf Tachos, Prognose und Kennzahlen dieser Seite.</p>
+      </div></div>
+    </div>`;
+  const g = gauge($('#gp-auto'), { label: 'Automatisierungsgrad', min: 0, max: 100, target: 60, fmt: (x) => `${Math.round(x)}<small>%</small>`, tickFmt: (x) => Math.round(x), chip: 'GEMESSEN' });
+  g.lock(''); requestAnimationFrame(() => g.set(S.automation, 'Ziel 60 %'));
+}
+
+// ================= Maßnahmen =================
+const MEASURES = {
+  xsell: { t: 'Cross-Selling an Top-8-Chancen', e: () => `+${mio(QUALIFIED.slice(0, 8).reduce((s, o) => s + o.exp, 0))} erwarteter Umsatz`, apply: () => {} },
+  dunning: { t: 'Mahnlauf automatisieren', e: () => 'DSO −6 Tage, Liquiditätsreichweite steigt', apply: () => { S.receivables -= 980_000; S.balance += 980_000; } },
+  early: { t: 'Frühwarnsystem für Risikokunden', e: () => `Kundengesundheit +6, ${mio(RISK_REV * 0.3)} gehalten`, apply: () => { G.health.set(healthNow(), `Ø über ${CUSTOMERS.length} Kunden · Frühwarnung aktiv`); } },
+  autoCheck: { t: 'Auftragsprüfung automatisieren', e: () => 'Automatisierungsgrad 38 → 61 %', apply: () => { S.automation = 61; } },
+};
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-measure]');
+  if (!b) return;
+  const k = b.dataset.measure;
+  if (S.measures[k]) return;
+  S.measures[k] = true; MEASURES[k].apply();
+  refreshGauges(); refreshKpis();
+  log('ai', `Maßnahme simuliert: ${MEASURES[k].t} · ${MEASURES[k].e()}`);
+  toast(`Simuliert: <b>${MEASURES[k].t}</b>`);
+  renderSummary();
+  if (current !== 'lagebild') show(current);
+});
+
+// ================= Agenten-Panel =================
+const AGENTS = [
+  { id: 'data', n: 'Daten-Agent', d: 'ERP, CRM und Bankfeed verbinden' },
+  { id: 'rev', n: 'Umsatz-Agent', d: 'Upselling- und Cross-Selling-Potenziale', tab: 'umsatz' },
+  { id: 'cash', n: 'Cashflow-Agent', d: 'Zahlungsströme, Prognose, Anomalien', tab: 'cashflow' },
+  { id: 'risk', n: 'Risiko-Agent', d: 'Abwanderungsrisiko je Kunde', tab: 'risiko' },
+  { id: 'proc', n: 'Prozess-Agent', d: 'Order-to-Cash, Engpässe', tab: 'prozesse' },
+  { id: 'rec', n: 'Empfehlungs-Agent', d: 'Maßnahmen priorisieren' },
+];
+$('#agents').innerHTML = AGENTS.map((a, i) => `<div class="agent" id="ag-${a.id}"><span class="ic">${String(i + 1).padStart(2, '0')}</span><span style="min-width:0"><span class="nm" style="display:block">${a.n}</span><span class="ds" style="display:block" data-ds>${a.d}</span></span><span class="st" data-st>IDLE</span></div>`).join('');
+$('#flow').innerHTML = `<svg viewBox="0 0 340 120">
+  ${['ERP', 'CRM', 'BANK'].map((s, i) => `<g class="src"><rect x="2" y="${8 + i * 38}" width="62" height="26" rx="3"/><text x="33" y="${25 + i * 38}" text-anchor="middle">${s}</text></g><path d="M64 ${21 + i * 38} C 100 ${21 + i * 38}, 100 60, 132 60"/>`).join('')}
+  <g class="core"><rect x="132" y="42" width="78" height="36" rx="3"/><text x="171" y="64" text-anchor="middle">SEMANTIC</text></g>
+  ${['UMSATZ', 'CASH', 'RISIKO', 'PROZESS'].map((s, i) => `<path d="M210 60 C 240 60, 240 ${12 + i * 32}, 272 ${12 + i * 32}"/><g class="agt"><rect x="272" y="${1 + i * 30}" width="66" height="22" rx="3"/><text x="305" y="${15 + i * 30}" text-anchor="middle">${s}</text></g>`).join('')}
+  <circle class="dot" r="2.5"><animateMotion dur="1.4s" repeatCount="indefinite" path="M64 21 C 100 21, 100 60, 132 60"/></circle>
+  <circle class="dot" r="2.5"><animateMotion dur="1.7s" repeatCount="indefinite" path="M64 97 C 100 97, 100 60, 132 60"/></circle>
+  <circle class="dot" r="2.5"><animateMotion dur="1.2s" repeatCount="indefinite" path="M210 60 C 240 60, 240 44, 272 44"/></circle>
+  <circle class="dot" r="2.5"><animateMotion dur="1.5s" repeatCount="indefinite" path="M210 60 C 240 60, 240 108, 272 108"/></circle>
+</svg>`;
+
+const term = $('#term');
+function log(cls, text) {
+  const d = document.createElement('div');
+  d.className = `ln ${cls}`;
+  d.innerHTML = `<span class="p">${new Date().toLocaleTimeString('de-DE')}</span> ${text}`;
+  term.appendChild(d);
+  term.scrollTop = term.scrollHeight;
+}
+async function typeLine(cls, text) {
+  const d = document.createElement('div');
+  d.className = `ln ${cls}`;
+  d.innerHTML = `<span class="p">${new Date().toLocaleTimeString('de-DE')}</span> <span data-t></span><span class="cur"></span>`;
+  term.appendChild(d);
+  const t = d.querySelector('[data-t]');
+  if (reduced) t.textContent = text;
+  else for (let i = 0; i <= text.length; i += 3) { t.textContent = text.slice(0, i); term.scrollTop = term.scrollHeight; await new Promise((r) => setTimeout(r, 12)); }
+  t.textContent = text;
+  d.querySelector('.cur').remove();
+  term.scrollTop = term.scrollHeight;
+}
+async function miniRun(title, lines, done) {
+  if (running) { toast('Bitte warten, bis die laufende Analyse fertig ist.'); return; }
+  running = true;
+  if (innerWidth <= 1100) $('#side').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  setRunUI('LÄUFT', 'live');
+  $('#flow').classList.add('run');
+  log('', `── ${title} ──`);
+  for (const [cls, text] of lines) { await typeLine(cls, text); await sleep(380); }
+  $('#flow').classList.remove('run');
+  setRunUI(S.analysisDone ? 'ABGESCHLOSSEN' : 'BEREIT', S.analysisDone ? 'ai' : '');
+  running = false;
+  done?.();
+}
+function setAgent(id, state, text) {
+  const el = $(`#ag-${id}`);
+  el.classList.remove('run', 'done');
+  if (state) el.classList.add(state);
+  el.querySelector('[data-st]').textContent = state === 'run' ? 'LÄUFT' : state === 'done' ? 'FERTIG' : 'IDLE';
+  if (text) el.querySelector('[data-ds]').textContent = text;
+}
+let running = false;
+function setRunUI(stateText, chipCls) { const c = $('#runState'); c.textContent = stateText; c.className = `chip ${chipCls || ''}`; }
+
+const SCRIPT = () => [
+  { id: 'data', lines: [
+    ['', 'Verbinde ERP (Demo-Adapter) … 18.420 Buchungen der letzten 24 Monate'],
+    ['', `CRM: ${CUSTOMERS.length} aktive Kunden, ${CUSTOMERS.reduce((s, c) => s + c.owned.size, 0)} Produktverträge`],
+    ['', `Bankfeed: ${S.events + 1180} Transaktionen, Kontostand ${mio(S.balance)}`],
+    ['ok', '✓ Semantic Layer abgeglichen: Umsatz, Marge, aktiver Kunde, DSO'],
+  ], done: 'Datenbasis steht' },
+  { id: 'rev', lines: [
+    ['', `${OPPS.length} Kunde-Produkt-Kombinationen ohne Vertrag gefunden`],
+    ['ai', `Bewertung nach Nutzung, Branche und Historie · ${QUALIFIED.length} Chancen ≥ 50 %`],
+    ['ok', `✓ ${custWithPotential} Kunden mit Potenzial · erwartet ${mio(UPSELL_EXP)} p. a.`],
+  ], done: `${QUALIFIED.length} Chancen, ${mio(UPSELL_EXP)}`, after: () => { G.upsell.chip('AGENT', 'ai'); G.upsell.set(UPSELL_SHARE, `${custWithPotential} von ${CUSTOMERS.length} Kunden · ${mio(UPSELL_EXP)} erwartet`); } },
+  { id: 'cash', lines: [
+    ['', 'Lerne Muster je Ausgabenkategorie aus 90 Tagen Bankdaten'],
+    ['ai', `13-Wochen-Prognose: Tiefpunkt ${mio(FC.reduce((m, f) => (f.bal < m.bal ? f : m), FC[0]).bal)} in ${FC.reduce((m, f) => (f.bal < m.bal ? f : m), FC[0]).w}`],
+    ['w', 'Live-Überwachung aktiv: auffällige Ausgänge werden ab jetzt markiert'],
+    ['ok', `✓ Liquiditätsreichweite ${nf1.format(liqDays())} Tage, DSO ${S.dso} Tage`],
+  ], done: 'Prognose und Überwachung aktiv' },
+  { id: 'risk', lines: [
+    ['', 'Kombiniere Nutzungstrend, Zahlungsverzug und Ticketaufkommen'],
+    ['w', `${RISKY.length} Kunden mit hohem Abwanderungsrisiko · ${mio(RISK_REV)} gefährdet`],
+    ['ok', `✓ Kundengesundheit Ø ${HEALTH}/100`],
+  ], done: `${RISKY.length} Frühwarnungen`, after: () => { G.health.chip('AGENT', 'ai'); G.health.set(healthNow(), `Ø über ${CUSTOMERS.length} Kunden · ${RISKY.length} Frühwarnungen`); } },
+  { id: 'proc', lines: [
+    ['', 'Rekonstruiere Order-to-Cash aus ERP-Statuswechseln'],
+    ['w', 'Engpass: Auftragsprüfung Ø 1,9 Tage, 11 manuelle Schritte'],
+    ['ok', '✓ Automatisierungspotenzial: 38 % → 61 % möglich'],
+  ], done: 'Engpass gefunden' },
+  { id: 'rec', lines: [
+    ['ai', 'Priorisiere Maßnahmen nach Wirkung und Aufwand'],
+    ['ok', '✓ 4 Maßnahmen bereit. Keine wird ohne Ihre Freigabe ausgeführt'],
+  ], done: '4 Maßnahmen' },
+];
+
+async function startRun() {
+  if (running) return;
+  running = true;
+  if (innerWidth <= 1100) $('#side').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+  $('#runBtn').disabled = true; $('#resetBtn').hidden = true;
+  $('#flow').classList.add('run');
+  term.innerHTML = '';
+  $('#summary').innerHTML = '';
+  setRunUI('LÄUFT', 'live');
+  $('#tickerMode').textContent = 'ROHDATEN';
+  const script = SCRIPT();
+  const totalLines = script.reduce((s, a) => s + a.lines.length, 0);
+  let doneLines = 0;
+  for (const step of script) {
+    const a = AGENTS.find((x) => x.id === step.id);
+    setAgent(a.id, 'run');
+    for (const [cls, text] of step.lines) {
+      await typeLine(cls, text);
+      doneLines++;
+      $('#runBar').style.width = `${doneLines / totalLines * 100}%`;
+      await sleep(420);
+    }
+    setAgent(a.id, 'done', step.done);
+    step.after?.();
+    if (a.id === 'cash') { S.analysisDone = true; $('#tickerMode').textContent = 'AGENT-ANNOTIERT'; $('#tickerMode').className = 'chip ai'; }
+    if (a.tab) { unlock(a.tab); log('ok', `▸ Bereich „${document.querySelector(`[data-tab="${a.tab}"]`).childNodes[1].textContent}“ freigeschaltet`); toast(`Freigeschaltet: <b>${document.querySelector(`[data-tab="${a.tab}"]`).childNodes[1].textContent}</b>`); }
+    await sleep(250);
+  }
+  S.analysisDone = true;
+  $('#flow').classList.remove('run');
+  setRunUI('ABGESCHLOSSEN', 'ai');
+  running = false;
+  $('#runBtn').disabled = false; $('#runBtn').lastChild.textContent = 'Erneut analysieren';
+  $('#resetBtn').hidden = false;
+  renderSummary();
+}
+function renderSummary() {
+  if (!S.analysisDone) return;
+  const xs = UPSELL_EXP, wc = 980_000, kept = RISK_REV * 0.3, hours = Math.round(S.ordersCount * 21 * 12 * 0.6), hoursVal = hours * 65;
+  $('#summary').innerHTML = `<div class="summary">
+    <span class="lbl">Identifiziertes Potenzial</span>
+    <div class="big">${mio(xs + kept + hoursVal)}<span style="font-size:12px;color:var(--fg-2)"> p. a.</span></div>
+    <div class="res-row"><span>Cross-Selling (erwartet)</span><b>${mio(xs)}</b></div>
+    <div class="res-row"><span>Gehaltener Umsatz</span><b>${mio(kept)}</b></div>
+    <div class="res-row"><span>Prozesszeit (${nf0.format(hours)} Std. × 65 €)</span><b>${mio(hoursVal)}</b></div>
+    <div class="res-row"><span>Freisetzbares Working Capital</span><b>${mio(wc)}</b></div>
+    <p class="note">Working Capital ist einmalige Liquidität und nicht in der Summe enthalten. Alle Werte basieren auf synthetischen Daten.</p>
+    <div class="lbl" style="margin-top:4px">Maßnahmen</div>
+    ${Object.entries(MEASURES).map(([k, m]) => `<div class="measure ${S.measures[k] ? 'on' : ''}"><span class="t">${m.t}</span><span class="e">${m.e()}</span><button class="btn btn-sm ${S.measures[k] ? '' : 'btn-lime'}" data-measure="${k}" ${S.measures[k] ? 'aria-pressed="true"' : ''}>${S.measures[k] ? 'Simuliert ✓' : 'Simulieren'}</button></div>`).join('')}
+  </div>`;
+}
+$('#runBtn').addEventListener('click', startRun);
+$('#fab').addEventListener('click', () => $('#side').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }));
+$('#resetBtn').addEventListener('click', () => {
+  if (running) return;
+  S.analysisDone = false; S.measures = {}; S.anomalies = []; S.automation = 38;
+  Object.keys(S.unlocked).forEach((k) => { if (k !== 'lagebild') delete S.unlocked[k]; });
+  document.querySelectorAll('.tab').forEach((t) => { if (t.dataset.tab !== 'lagebild') { t.classList.remove('unlocked'); t.querySelector('.badge')?.classList.add('new'); } });
+  AGENTS.forEach((a) => setAgent(a.id, null, a.d));
+  G.upsell.chip('GESPERRT'); G.upsell.lock('Agentenanalyse ausstehend');
+  G.health.chip('GESPERRT'); G.health.lock('Agentenanalyse ausstehend');
+  term.innerHTML = '<div class="ln"><span class="p">$</span> Zurückgesetzt. Bereiche wieder gesperrt.</div>';
+  $('#summary').innerHTML = ''; $('#runBar').style.width = '0';
+  $('#runBtn').lastChild.textContent = 'Agentenanalyse starten';
+  $('#resetBtn').hidden = true; setRunUI('BEREIT');
+  $('#tickerMode').textContent = 'ROHDATEN'; $('#tickerMode').className = 'chip';
+  show('lagebild');
+});
+
+let toastT;
+function toast(html) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = html;
+  document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2600);
+}
+
+// ================= Hell / Dunkel =================
+function applyMode(mode) {
+  document.documentElement.dataset.mode = mode;
+  const dark = mode === 'dark';
+  const b = $('#modeBtn');
+  b.setAttribute('aria-pressed', String(dark));
+  b.setAttribute('aria-label', dark ? 'Helles Design einschalten' : 'Dunkles Design einschalten');
+  $('#modeLbl').textContent = dark ? 'HELL' : 'DUNKEL';
+  $('#modeIco').innerHTML = dark ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' : '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  try { localStorage.setItem('gl-console-mode', mode); } catch (e) {}
+  refreshKpis(); drawStream();
+  if (current === 'umsatz' && S.unlocked.umsatz) renderUmsatz();
+}
+let savedMode = 'light';
+try { savedMode = localStorage.getItem('gl-console-mode') || 'light'; } catch (e) {}
+$('#modeBtn').addEventListener('click', () => applyMode(document.documentElement.dataset.mode === 'dark' ? 'light' : 'dark'));
+applyMode(savedMode === 'dark' ? 'dark' : 'light');
+
+// ================= Start =================
+calc(); refreshKpis(); refreshGauges();
+for (let i = 0; i < 6; i++) tick();
+setInterval(tick, TICK_MS);
+const startTab = (location.hash || '').slice(1);
+if (['umsatz', 'cashflow', 'risiko', 'prozesse'].includes(startTab)) show(startTab);
+requestAnimationFrame(drawStream);
+})();
+</script>
+</body>
+</html>
